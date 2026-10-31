@@ -112,7 +112,15 @@
     .rule{margin:12px 0}
     .sub-ta{line-height:1.6;margin-top:6px}
     .sign{margin-top:10px}
-    .hint{font-size:10.5px;letter-spacing:.14em;bottom:calc(18px + env(safe-area-inset-bottom))}
+    .hint{font-size:10.5px;letter-spacing:.14em;bottom:calc(18px + env(safe-area-inset-bottom));
+      left:12px;right:auto;transform:none;text-align:left;max-width:38vw;line-height:1.35}
+    /* compact score chip so it never covers the hint */
+    .score{padding:6px 10px;bottom:calc(12px + env(safe-area-inset-bottom));right:12px}
+    .score .pts{font-size:20px}
+    .score .lbl{display:none}
+    .score .cnt{font-size:10.5px}
+    .score .combo{font-size:11px;min-height:13px}
+    .score .lvl{font-size:8.5px;margin-top:2px}
     /* wish card becomes a bottom sheet on phones, clear of the score chip */
     .wish{position:fixed;left:max(16px,env(safe-area-inset-left));right:max(16px,env(safe-area-inset-right));
       bottom:calc(170px + env(safe-area-inset-bottom));margin:0;max-width:none;
@@ -614,6 +622,28 @@ function levelUp(){
   }
 }
 
+/* ---------- missed cake: deduct what you would have scored ---------- */
+let missedCount=0;
+function missCake(f){
+  if(f.missCounted) return; f.missCounted=true;
+  missedCount++;
+  const mult = combo>=2 ? Math.min(1 + combo*0.1, 2.5) : 1;
+  const pts = Math.round(20*mult);
+  combo=0; comboAt=0;   // combo restarts from scratch after a miss
+  comboEl.textContent='';
+  points=Math.max(0, points-pts);
+  ptsEl.textContent=points;
+  const mx=Math.min(Math.max(f.x,60),W-60), my=H-70;
+  floaters.push({x:mx,y:my,txt:'-'+pts+' missed!',life:1.2,c:'#ff6b6b',big:false});
+  scoreEl.classList.remove('pop'); void scoreEl.offsetWidth; scoreEl.classList.add('pop');
+  // sad descending plop
+  try{
+    tone(300,0,0.12,0.10,'sine');
+    tone(196,0.10,0.16,0.10,'sine');
+    tone(131,0.22,0.28,0.09,'sine');
+  }catch(err){}
+}
+
 /* ---------- score ---------- */
 let points=0, slicedCount=0, hit31=false;
 const floaters=[];
@@ -829,7 +859,10 @@ function frame(t){
       f.hy1+=f.vy1*dt+f.vy*dt*0.5; f.hx1+=f.vx1*dt; f.hr1+=f.vr1*dt;
       f.hy2+=f.vy2*dt+f.vy*dt*0.5; f.hx2+=f.vx2*dt; f.hr2+=f.vr2*dt;
     }
-    if(f.y-(f.sliced?2:1)*f.r>H+140) f.gone=true;
+    if(f.y-(f.sliced?2:1)*f.r>H+140){
+      if(!f.gone && !f.sliced) missCake(f);
+      f.gone=true;
+    }
   }
   if(combo>1 && performance.now()-comboAt>1200){ combo=0; comboEl.textContent=''; }
   { const lvEl=document.getElementById('lvl'), nxEl=document.getElementById('nx');
