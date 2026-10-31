@@ -63,7 +63,7 @@
   .banner{position:fixed;left:0;right:0;top:22vh;z-index:9;text-align:center;pointer-events:none;
     max-width:min(860px,92vw);margin:0 auto;opacity:0;transition:opacity 1.4s ease .25s}
   body.ready .banner{opacity:1}
-  .banner h1{font-family:'Baloo 2','Catamaran',cursive;font-weight:800;
+  .banner h1{font-family:'Baloo 2','Catamaran',cursive;font-weight:800;white-space:nowrap;
     font-size:clamp(46px,7.6vw,104px);line-height:1.02;letter-spacing:.01em;
     background:linear-gradient(180deg,#fff3c4 0%,#ffd35e 35%,#ff9a5e 70%,#ff5d8f 100%);
     -webkit-background-clip:text;background-clip:text;color:transparent;
@@ -91,18 +91,19 @@
   .sign{margin-top:18px;font-family:'Catamaran',sans-serif;font-weight:300;font-size:12px;
     letter-spacing:.18em;opacity:.7}
 
-  .score{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom));right:20px;z-index:18;
-    font-family:'Catamaran',sans-serif;font-weight:500;text-align:right;pointer-events:none;
-    padding:10px 16px;border-radius:10px;background:rgba(30,16,40,.78);
-    border:1px solid rgba(232,194,106,.4);
-    opacity:0;transition:opacity 1s ease 1s;letter-spacing:.08em}
+  .score{position:fixed;top:calc(10px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);
+    z-index:18;display:flex;align-items:center;gap:10px;pointer-events:none;
+    font-family:'Catamaran',sans-serif;font-weight:600;white-space:nowrap;
+    padding:6px 14px;border-radius:20px;background:rgba(30,16,40,.72);
+    border:1px solid rgba(232,194,106,.35);
+    opacity:0;transition:opacity 1s ease 1s;letter-spacing:.04em}
   body.ready .score{opacity:1;}
-  .score .pts{font-size:34px;color:#f5cf7d;font-weight:700;font-variant-numeric:tabular-nums;
-    text-shadow:0 0 14px rgba(232,194,106,.55);line-height:1}
-  .score .lbl{font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:#e8c26a;opacity:.8;margin-top:3px}
-  .score .cnt{font-size:12px;color:#f3e7d3;opacity:.85;margin-top:5px;font-variant-numeric:tabular-nums}
-  .score .combo{font-size:14px;color:#ff9db5;font-weight:700;min-height:16px}
-  .score .lvl{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#8fd3f4;opacity:.75;margin-top:4px;font-variant-numeric:tabular-nums}
+  .score .pts{font-size:18px;color:#f5cf7d;font-weight:800;font-variant-numeric:tabular-nums;
+    text-shadow:0 0 10px rgba(232,194,106,.5);line-height:1}
+  .score .sep{width:1px;height:14px;background:rgba(232,194,106,.3);flex:none}
+  .score .cnt{font-size:12.5px;color:#f3e7d3;opacity:.9;font-variant-numeric:tabular-nums}
+  .score .combo{font-size:12.5px;color:#ff9db5;font-weight:800}
+  .score .lvl{font-size:12.5px;letter-spacing:.06em;color:#8fd3f4;font-variant-numeric:tabular-nums}
   .score.pop .pts{animation:scorepop .35s ease}
   @keyframes scorepop{40%{transform:scale(1.35)}}
 
@@ -126,7 +127,7 @@
     /* everything below scales with the viewport: phones of any size get a
        proportionally identical layout — no scrolling, no clipping */
     .banner{top:calc(max(56px, 7vh) + env(safe-area-inset-top))}
-    .banner h1{font-size:min(13vw, 9.5vh)}
+    .banner h1{font-size:min(7.8vw, 6.2vh)}
     .banner .tamil-main{font-size:min(5vw, 3.6vh);margin-top:0.6vh}
     .banner .sparkle{font-size:2.2vh}
     .panel{left:max(2vw,env(safe-area-inset-left));right:max(2vw,env(safe-area-inset-right));
@@ -140,18 +141,17 @@
     .sub-en{font-size:max(11px,1.95vh);line-height:1.45}
     .sub-ta{font-size:max(10.5px,1.85vh);line-height:1.5;margin-top:0.7vh}
     .sign{margin-top:1vh;font-size:max(10px,1.8vh)}
-    .hint{font-size:max(9px,1.6vh);letter-spacing:.14em;bottom:calc(19vh + env(safe-area-inset-bottom));
+    .hint{font-size:max(9px,1.6vh);letter-spacing:.14em;bottom:calc(2.2vh + env(safe-area-inset-bottom));
       left:2vw;right:auto;transform:none;text-align:left;max-width:60vw;line-height:1.35}
-    /* score chip scales too; it always sits in the bottom-right corner */
-    .score{padding:0.9vh 1.6vw;bottom:calc(1.6vh + env(safe-area-inset-bottom));right:2vw;border-radius:1.6vh}
-    .score .pts{font-size:3.2vh}
-    .score .lbl{display:none}
-    .score .cnt{font-size:1.6vh}
-    .score .combo{font-size:1.7vh;min-height:1.9vh}
-    .score .lvl{font-size:1.3vh;margin-top:0.3vh}
-    /* wish card: bottom sheet above the chip, fully proportional */
+    /* top HUD row: compact, sits above the banner */
+    .score{top:calc(10px + env(safe-area-inset-top));gap:7px;padding:5px 10px}
+    .score .pts{font-size:15px}
+    .score .cnt,.score .combo{font-size:11px}
+    .score .lvl{font-size:11px}
+    .score .sep{height:11px}
+    /* wish card: bottom sheet, fully proportional */
     .wish{position:fixed;left:max(3vw,env(safe-area-inset-left));right:max(3vw,env(safe-area-inset-right));
-      bottom:calc(22.5vh + env(safe-area-inset-bottom));margin:0;max-width:none;
+      bottom:calc(8vh + env(safe-area-inset-bottom));margin:0;max-width:none;
       font-size:max(11px,1.9vh);line-height:1.45;padding:1.6vh 2.5vw;border-radius:1.8vh}
     .wish .t{font-size:max(10px,1.7vh);margin-top:0.5vh}
   }
@@ -171,7 +171,7 @@
   <div class="banner">
     <span class="sparkle sp1">✨</span><span class="sparkle sp2">✨</span>
     <span class="sparkle sp3">✨</span><span class="sparkle sp4">✨</span>
-    <h1>Happy Birthday,<br><span class="name">Kavin!</span></h1>
+    <h1>Happy Birthday <span class="name">Kavin!</span></h1>
     <div class="tamil-main">கவினுக்குப் பிறந்தநாள் வாழ்த்துக்கள்!</div>
   </div>
 
@@ -192,11 +192,7 @@
   <div class="hint" id="hint">press &amp; hold a candle to blow it out</div>
 
   <div class="score" id="score">
-    <div class="pts" id="pts">0</div>
-    <div class="lbl">points</div>
-    <div class="cnt">🍰 <span id="cnt">0</span> sliced</div>
-    <div class="combo" id="combo"></div>
-    <div class="lvl">Lv.<span id="lvl">1</span> · <span id="nx">200</span><span id="nxsuf"> pts to next</span></div>
+    <span class="pts" id="pts">0</span><span class="sep"></span><span class="cnt">🍰<span id="cnt">0</span></span><span class="sep"></span><span class="lvl">L<span id="lvl">1</span><span id="nx"> +200</span><span id="nxsuf"></span></span><span class="combo" id="combo"></span>
   </div>
 </div>
 
@@ -232,24 +228,29 @@ function layoutCake(){
     // phone: text on top, cake sits in the lower-middle, hint below it
     CX = W*0.5;
     tableY = H*0.74;
-    var bw = Math.min(W*0.52, (tableY-H*0.44)/0.62);
+    var bw = Math.min(W*0.52, (tableY-H*0.46-30)/0.79);
   } else {
     CX = W*0.76;
     tableY = H*0.84;
     // bottom tier width: fit horizontally (to nearest screen edge), and fit
     // cake + candle + flame vertically above the table line
     var bw = Math.min(W*0.24,
-                      (tableY-90)/0.62,
+                      (tableY-70)/0.79,
                       2*Math.min(CX-15, W-CX-15));
   }
-  const t1h=bw*0.17, t2h=bw*0.135, t3h=bw*0.12;
-  const t1w=bw, t2w=bw*0.68, t3w=bw*0.44;
-  const t1y=tableY-t1h, t2y=t1y-t2h, t3y=t2y-t3h;
-  tiers=[
-    {y:t1y, w:t1w, h:t1h, frost:'#f6a8c3', sponge:'#7a4a21'},
-    {y:t2y, w:t2w, h:t2h, frost:'#fdeef3', sponge:'#8a5a33'},
-    {y:t3y, w:t3w, h:t3h, frost:'#f6a8c3', sponge:'#7a4a21'},
-  ];
+  // five tapering tiers; total height 0.62*bw keeps the old vertical-fit math valid
+  const TW=[1, 0.80, 0.62, 0.45, 0.28];
+  const TH=[0.16, 0.13, 0.11, 0.11, 0.11];
+  const FROST=['#f6a8c3','#fdeef3','#f6a8c3','#fdeef3','#f6a8c3'];
+  const SPONGE=['#7a4a21','#8a5a33','#7a4a21','#8a5a33','#7a4a21'];
+  tiers=[];
+  let topY=tableY;
+  for(let i=0;i<5;i++){
+    const h=bw*TH[i], w=bw*TW[i];
+    topY-=h;
+    tiers.push({y:topY, w:w, h:h, frost:FROST[i], sponge:SPONGE[i]});
+  }
+  const t3w=bw*TW[4], t3y=topY;
   const old=candles;
   candles=[-1,0,1].map((s,i)=>({
     x:CX + s*t3w*0.34,
@@ -1151,8 +1152,8 @@ function frame(t){
   if(combo>1 && performance.now()-comboAt>1200){ combo=0; comboEl.textContent=''; }
   { const lvEl=document.getElementById('lvl'), nxEl=document.getElementById('nx'), nxSuf=document.getElementById('nxsuf');
     if(lvEl.textContent!=String(level+1)) lvEl.textContent=String(level+1);
-    if(level<LEVELS.length-1){ nxEl.textContent=String(LEVELS[level+1].at-points); nxSuf.textContent=' pts to next'; }
-    else { nxEl.textContent='MAX'; nxSuf.textContent=''; } }
+    if(level<LEVELS.length-1){ nxEl.textContent=' +'+String(LEVELS[level+1].at-points); nxSuf.textContent=''; }
+    else { nxEl.textContent=' MAX'; nxSuf.textContent=''; } }
   for(const c of candles){
     if(c.flick>0) c.flick=Math.max(0, c.flick-dt*2.2);
     if(holdC===c && c.lit){
