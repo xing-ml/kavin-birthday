@@ -518,10 +518,9 @@ function sliceFallers(p0,p1){
     f.hx1=0; f.hy1=0; f.hr1=0; f.vx1=f.vx*0.4+nx*pw+dx/len*70; f.vy1=f.vy*0.25+ny*pw-140; f.vr1=(Math.random()<0.5?-1:1)*(4+Math.random()*5);
     f.hx2=0; f.hy2=0; f.hr2=0; f.vx2=f.vx*0.4-nx*pw+dx/len*70; f.vy2=f.vy*0.25-ny*pw-140; f.vr2=(Math.random()<0.5?-1:1)*(4+Math.random()*5);
     addSlash(p0,p1);
-    // combo scoring: 10/combo, plus a bonus that kicks in at x3 and grows;
-    // x5+ is "ON FIRE" and doubles the bonus
-    const bonus = combo>=3 ? (combo>=5 ? 20*(combo-2) : 10*(combo-2)) : 0;
-    const pts = 10*combo + bonus;
+    // combo multiplier: x2=1.2x, x3=1.3x, ... +0.1 per combo, capped at 2.5x
+    const mult = combo>=2 ? Math.min(1 + combo*0.1, 2.5) : 1;
+    const pts = Math.round(20*mult);
     addScore(f.x, f.y-f.r-14, pts, combo);
     sliceSound(pts);
     spawnSplash(f);
@@ -598,8 +597,9 @@ function addScore(x,y,pts,comboN){
   }
   scoreEl.classList.remove('pop'); void scoreEl.offsetWidth; scoreEl.classList.add('pop');
   floaters.push({x,y,txt:'+'+pts,life:1,c:comboN>=2?'#ff7d9c':'#e8c26a',big:comboN>=3});
-  if(comboN>=5){ comboEl.textContent='🔥 ON FIRE x'+comboN+' 🔥'; }
-  else if(comboN>=2){ comboEl.textContent='combo x'+comboN+'!'; }
+  const multN=(comboN>=2?Math.min(1+comboN*0.1,2.5):1).toFixed(1);
+  if(comboN>=5){ comboEl.textContent='🔥 ON FIRE x'+comboN+' · '+multN+'x points 🔥'; }
+  else if(comboN>=2){ comboEl.textContent='combo x'+comboN+' · '+multN+'x points'; }
   if(slicedCount===31 && !hit31){
     hit31=true;
     floaters.push({x:W/2,y:H*0.3,txt:'31! just like you 🎂',life:2.2,c:'#e8c26a',big:true});
