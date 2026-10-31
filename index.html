@@ -45,7 +45,7 @@
   .sign{margin-top:18px;font-family:'Catamaran',sans-serif;font-weight:300;font-size:12px;
     letter-spacing:.18em;opacity:.7}
 
-  .score{position:fixed;top:calc(16px + env(safe-area-inset-top));right:20px;z-index:12;
+  .score{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom));right:20px;z-index:14;
     font-family:'Catamaran',sans-serif;font-weight:500;text-align:right;pointer-events:none;
     padding:10px 16px;border-radius:10px;background:rgba(30,16,40,.78);
     border:1px solid rgba(232,194,106,.4);
@@ -88,9 +88,9 @@
     .sub-ta{line-height:1.6;margin-top:6px}
     .sign{margin-top:10px}
     .hint{font-size:10.5px;letter-spacing:.14em;bottom:calc(18px + env(safe-area-inset-bottom))}
-    /* wish card becomes a bottom sheet on phones */
+    /* wish card becomes a bottom sheet on phones, clear of the score chip */
     .wish{position:fixed;left:max(16px,env(safe-area-inset-left));right:max(16px,env(safe-area-inset-right));
-      bottom:calc(58px + env(safe-area-inset-bottom));margin:0;max-width:none;
+      bottom:calc(170px + env(safe-area-inset-bottom));margin:0;max-width:none;
       font-size:13px;line-height:1.5;padding:14px 18px}
     .wish .t{font-size:12px;margin-top:6px}
   }
