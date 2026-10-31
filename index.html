@@ -23,12 +23,14 @@
   /* blowing-face cursor near a candle */
   body.blow, body.blow canvas{cursor:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'><circle cx='15' cy='22' r='10' fill='%231a1024' fill-opacity='0.55' stroke='%23e8c26a' stroke-width='2.4'/><path d='M26 15 q7 -2 14 0 M26 22 q8 0 14 2 M26 29 q6 2 12 3' stroke='%23e8c26a' stroke-width='2.4' fill='none' stroke-linecap='round'/><circle cx='12' cy='19' r='1.5' fill='%23e8c26a'/><path d='M11 25 q4 2 7 0' stroke='%23e8c26a' stroke-width='2' fill='none' stroke-linecap='round'/></svg>") 15 22, pointer;}
   #stage{position:fixed;inset:0}
+  #cake{z-index:1}
+  #fg{z-index:16;pointer-events:none}
   canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;
     -webkit-touch-callout:none;-webkit-user-select:none;user-select:none;-webkit-user-drag:none;}
 
   .panel{
     position:fixed; left:min(7vw,90px); top:auto; bottom:9vh; transform:none;
-    max-width:min(400px,40vw); max-height:52vh; overflow-y:auto; z-index:10; pointer-events:none;
+    max-width:min(400px,40vw); max-height:52vh; overflow:hidden; z-index:10; pointer-events:none;
     opacity:0; transition:opacity 1.6s ease .3s;
   }
   body.ready .panel{opacity:1;}
@@ -66,7 +68,7 @@
   .sign{margin-top:18px;font-family:'Catamaran',sans-serif;font-weight:300;font-size:12px;
     letter-spacing:.18em;opacity:.7}
 
-  .score{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom));right:20px;z-index:14;
+  .score{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom));right:20px;z-index:18;
     font-family:'Catamaran',sans-serif;font-weight:500;text-align:right;pointer-events:none;
     padding:10px 16px;border-radius:10px;background:rgba(30,16,40,.78);
     border:1px solid rgba(232,194,106,.4);
@@ -98,43 +100,44 @@
     font-size:12.5px;color:var(--rose);display:block;margin-top:8px}
 
   @media (max-width:820px), (pointer:coarse){
-    .banner{top:calc(3.5vh + env(safe-area-inset-top))}
-    .banner h1{font-size:clamp(42px,13vw,72px)}
-    .banner .tamil-main{font-size:clamp(17px,5vw,24px)}
-    .panel{left:max(20px,env(safe-area-inset-left));right:max(20px,env(safe-area-inset-right));
+    /* everything below scales with the viewport: phones of any size get a
+       proportionally identical layout — no scrolling, no clipping */
+    .banner{top:calc(2.5vh + env(safe-area-inset-top))}
+    .banner h1{font-size:min(13vw, 9.5vh)}
+    .banner .tamil-main{font-size:min(5vw, 3.6vh);margin-top:0.6vh}
+    .banner .sparkle{font-size:2.2vh}
+    .panel{left:max(2vw,env(safe-area-inset-left));right:max(2vw,env(safe-area-inset-right));
       max-width:none;top:31vh;bottom:auto;transform:none;
-      max-height:26vh;overflow-y:auto;padding-bottom:0;text-align:center;
+      overflow:hidden;padding:1.6vh 2.5vw;text-align:center;
+      background:rgba(24,13,32,.72);border:1px solid rgba(232,194,106,.16);
+      border-radius:1.8vh;
       transition:opacity 1.4s ease .2s}
-    .panel .rule{margin:8px auto}
-    .eyebrow{font-size:10px;letter-spacing:.3em;margin-bottom:10px}
-    h1{font-size:clamp(28px,8.5vw,40px)}
-    .tamil-main{font-size:clamp(15px,4.4vw,19px);margin-top:8px}
-    .rule{margin:12px 0}
-    .sub-ta{line-height:1.6;margin-top:6px}
-    .sign{margin-top:10px}
-    .hint{font-size:10.5px;letter-spacing:.14em;bottom:calc(150px + env(safe-area-inset-bottom));
-      left:12px;right:auto;transform:none;text-align:left;max-width:60vw;line-height:1.35}
-    /* text panel gets a soft backdrop so falling cakes never obscure it */
-    .panel{background:rgba(24,13,32,.72);border:1px solid rgba(232,194,106,.16);
-      border-radius:14px;padding:12px 14px}
-    /* compact score chip so it never covers the hint */
-    .score{padding:6px 10px;bottom:calc(12px + env(safe-area-inset-bottom));right:12px}
-    .score .pts{font-size:20px}
+    .eyebrow{font-size:max(8px,1.55vh);letter-spacing:.3em;margin-bottom:0.8vh}
+    .rule{margin:1vh auto}
+    .sub-en{font-size:max(11px,1.95vh);line-height:1.45}
+    .sub-ta{font-size:max(10.5px,1.85vh);line-height:1.5;margin-top:0.7vh}
+    .sign{margin-top:1vh;font-size:max(10px,1.8vh)}
+    .hint{font-size:max(9px,1.6vh);letter-spacing:.14em;bottom:calc(19vh + env(safe-area-inset-bottom));
+      left:2vw;right:auto;transform:none;text-align:left;max-width:60vw;line-height:1.35}
+    /* score chip scales too; it always sits in the bottom-right corner */
+    .score{padding:0.9vh 1.6vw;bottom:calc(1.6vh + env(safe-area-inset-bottom));right:2vw;border-radius:1.6vh}
+    .score .pts{font-size:3.2vh}
     .score .lbl{display:none}
-    .score .cnt{font-size:10.5px}
-    .score .combo{font-size:11px;min-height:13px}
-    .score .lvl{font-size:8.5px;margin-top:2px}
-    /* wish card becomes a bottom sheet on phones, clear of the score chip */
-    .wish{position:fixed;left:max(16px,env(safe-area-inset-left));right:max(16px,env(safe-area-inset-right));
-      bottom:calc(170px + env(safe-area-inset-bottom));margin:0;max-width:none;
-      font-size:13px;line-height:1.5;padding:14px 18px}
-    .wish .t{font-size:12px;margin-top:6px}
+    .score .cnt{font-size:1.6vh}
+    .score .combo{font-size:1.7vh;min-height:1.9vh}
+    .score .lvl{font-size:1.3vh;margin-top:0.3vh}
+    /* wish card: bottom sheet above the chip, fully proportional */
+    .wish{position:fixed;left:max(3vw,env(safe-area-inset-left));right:max(3vw,env(safe-area-inset-right));
+      bottom:calc(22.5vh + env(safe-area-inset-bottom));margin:0;max-width:none;
+      font-size:max(11px,1.9vh);line-height:1.45;padding:1.6vh 2.5vw;border-radius:1.8vh}
+    .wish .t{font-size:max(10px,1.7vh);margin-top:0.5vh}
   }
 </style>
 </head>
 <body>
 <div id="stage">
   <canvas id="cake"></canvas>
+  <canvas id="fg"></canvas>
 
   <div class="banner">
     <span class="sparkle sp1">✨</span><span class="sparkle sp2">✨</span>
@@ -186,7 +189,10 @@ document.body.classList.add('ready');
    (Google fonts are a progressive enhancement).
    ============================================================ */
 const canvas = document.getElementById('cake');
-const ctx = canvas.getContext('2d');
+const fgCanvas = document.getElementById('fg');
+const mainCtx = canvas.getContext('2d');
+const fgCtx = fgCanvas.getContext('2d');
+let ctx = mainCtx;
 let W=0,H=0,DPR=1;
 let narrow=false;
 
@@ -230,7 +236,10 @@ function resize(){
   DPR = Math.min(window.devicePixelRatio||1, 2);
   W = innerWidth; H = innerHeight;
   canvas.width = W*DPR; canvas.height = H*DPR;
-  ctx.setTransform(DPR,0,0,DPR,0,0);
+  fgCanvas.width = W*DPR; fgCanvas.height = H*DPR;
+  ctx = mainCtx;
+  mainCtx.setTransform(DPR,0,0,DPR,0,0);
+  fgCtx.setTransform(DPR,0,0,DPR,0,0);
   narrow = W < 820;
   // phone: the wish card detaches into a fixed bottom sheet (CSS positions it);
   // desktop: it flows back under the signature inside the text panel
@@ -371,8 +380,28 @@ const fallers=[];
 let nextDrop=0.4;
 const GRAV=300;
 function pickSpawnX(r){
-  // full-screen cake rain: any horizontal position, any screen size
-  return r+6+Math.random()*(W-2*r-12);
+  // cake rain across the screen, but NOT through the big cake's columns
+  const halfBottom = tiers.length ? tiers[0].w/2 : 0;
+  const L = Math.max(0, CX-halfBottom), Rr = Math.min(W, CX+halfBottom);
+  if(W-(Rr-L) < 2.4*(r+20)) return null;   // no room at all — skip this drop
+  for(let tries=0;tries<8;tries++){
+    let x;
+    if(narrow){
+      // big cake owns the middle: keep the whole cake disc inside the margins
+      const lo = r+6, leftMax = L-r-12, rightMin = Rr+r+12, rightMax = W-r-6;
+      if(leftMax>lo && (rightMax<=rightMin || Math.random()<0.5))
+        x = lo + Math.random()*(leftMax-lo);
+      else if(rightMax>rightMin)
+        x = rightMin + Math.random()*(rightMax-rightMin);
+      else continue;
+    } else {
+      // desktop: keep clear of the big cake on the right
+      const hi = Math.max(L-r-12, r+6);
+      x = r+6 + Math.random()*(hi-(r+6));
+    }
+    if(x>r && x<W-r) return x;
+  }
+  return null;
 }
 function spawnCake(){
   const r=narrow? Math.min(40, W*0.075) : 40+Math.random()*20;
@@ -604,13 +633,29 @@ function drawParticles(dt){
 
 /* ---------- levels: rain intensity grows with your score ---------- */
 const LEVELS=[
-  {at:0,   cap:4, gapMin:1.6, gapMax:2.6, speed:1.0, name:'warm-up'},
-  {at:200, cap:6, gapMin:1.1, gapMax:1.8, speed:1.15,name:'sugar rush'},
-  {at:500, cap:9, gapMin:0.7, gapMax:1.2, speed:1.3, name:'cake storm'},
-  {at:1000,cap:13,gapMin:0.45,gapMax:0.8, speed:1.5, name:'legendary'},
+  {at:0,    cap:4,  gapMin:1.6,  gapMax:2.6,  speed:1.0,  name:'warm-up'},
+  {at:200,  cap:5,  gapMin:1.35, gapMax:2.1,  speed:1.06, name:'sugar rush'},
+  {at:500,  cap:7,  gapMin:1.1,  gapMax:1.7,  speed:1.13, name:'cake storm'},
+  {at:1000, cap:8,  gapMin:0.95, gapMax:1.5,  speed:1.2,  name:'frosting frenzy'},
+  {at:1600, cap:10, gapMin:0.8,  gapMax:1.3,  speed:1.28, name:'sprinkle tornado'},
+  {at:2300, cap:12, gapMin:0.7,  gapMax:1.1,  speed:1.36, name:'bakery blaze'},
+  {at:3100, cap:14, gapMin:0.6,  gapMax:0.95, speed:1.45, name:'oven overdrive'},
+  {at:4000, cap:16, gapMin:0.52, gapMax:0.85, speed:1.55, name:'tier meltdown'},
+  {at:5000, cap:19, gapMin:0.45, gapMax:0.75, speed:1.7,  name:'sugar singularity'},
+  {at:6200, cap:22, gapMin:0.38, gapMax:0.65, speed:1.85, name:'legendary'},
 ];
 let level=0;
 function levelCap(){ return Math.max(3, Math.round(LEVELS[level].cap*(narrow?0.6:1))); }
+function syncLevel(){
+  while(level<LEVELS.length-1 && points>=LEVELS[level+1].at){ level++; levelUp(); }
+  while(level>0 && points<LEVELS[level].at){ level--; levelDown(); }
+}
+function levelDown(){
+  const L=LEVELS[level];
+  floaters.push({x:W/2,y:H*0.28,txt:'LEVEL DOWN',life:1.8,c:'#8fd3f4',big:true});
+  floaters.push({x:W/2,y:H*0.28+34,txt:'dropped to '+L.name,life:1.8,c:'#9fb3d6',big:false});
+  try{ tone(330,0,0.18,0.10,'triangle'); tone(262,0.16,0.32,0.10,'triangle'); }catch(err){}
+}
 function levelUp(){
   const L=LEVELS[level];
   floaters.push({x:W/2,y:H*0.28,txt:'LEVEL UP!',life:2.4,c:'#e8c26a',big:true});
@@ -636,6 +681,7 @@ function missCake(f){
   comboEl.textContent='';
   points=Math.max(0, points-pts);
   ptsEl.textContent=points;
+  syncLevel();
   const mx=Math.min(Math.max(f.x,60),W-60), my=H-70;
   floaters.push({x:mx,y:my,txt:'-'+pts+' missed!',life:1.2,c:'#ff6b6b',big:false});
   scoreEl.classList.remove('pop'); void scoreEl.offsetWidth; scoreEl.classList.add('pop');
@@ -655,9 +701,7 @@ const scoreEl=document.getElementById('score'), ptsEl=document.getElementById('p
 function addScore(x,y,pts,comboN){
   points+=pts; slicedCount++;
   ptsEl.textContent=points; cntEl.textContent=slicedCount;
-  while(level<LEVELS.length-1 && points>=LEVELS[level+1].at){
-    level++; levelUp();
-  }
+  syncLevel();
   scoreEl.classList.remove('pop'); void scoreEl.offsetWidth; scoreEl.classList.add('pop');
   floaters.push({x,y,txt:'+'+pts,life:1,c:comboN>=2?'#ff7d9c':'#e8c26a',big:comboN>=3});
   const multN=(comboN>=2?Math.min(1+comboN*0.1,2.5):1).toFixed(1);
@@ -780,8 +824,20 @@ function layoutPhoneStack(){
   const bb=bannerEl.getBoundingClientRect();
   const top=Math.round(bb.bottom+10);
   panelEl.style.top=top+'px';
-  // keep the panel clear of the cake zone below ~60% of the screen
-  panelEl.style.maxHeight=Math.max(150, Math.round(H*0.60 - top))+'px';
+  // panel gets the band between the banner and the cake zone; auto-shrink
+  // its content to fit — no scrolling, no clipping on any phone size
+  const box=Math.max(150, Math.round(H*0.52 - top));
+  panelEl.style.maxHeight=box+'px';
+  // NOTE: never use `zoom` on the panel itself — with fixed positioning it also
+  // scales the element's own `top`, launching the panel up into the banner.
+  // transform:scale keeps position and only shrinks the rendered content.
+  panelEl.style.transform='';
+  const inner=panelEl.scrollHeight;   // already includes padding
+  if(inner>panelEl.clientHeight+2){
+    const z=Math.max(0.5, (panelEl.clientHeight-2)/inner);
+    panelEl.style.transformOrigin='top center';
+    panelEl.style.transform='scale('+z.toFixed(3)+')';
+  }
 }
 addEventListener('resize', layoutPhoneStack);
 layoutPhoneStack();
@@ -896,6 +952,7 @@ function frame(t){
     }
   }
   ctx.clearRect(0,0,W,H);
+  fgCtx.clearRect(0,0,W,H);
   let shook=false;
   if(shake.t>0){
     shake.t-=dt; shook=true;
@@ -904,6 +961,8 @@ function frame(t){
     ctx.translate((Math.random()-0.5)*2*m,(Math.random()-0.5)*2*m);
   }
   drawCake();
+  // ---- foreground layer: falling cakes, crumbs, slashes, announcements ----
+  ctx = fgCtx;
   for(const f of fallers){
     if(f.gone) continue;
     if(!f.sliced){
@@ -914,12 +973,15 @@ function frame(t){
     }
   }
   for(let i=fallers.length-1;i>=0;i--) if(fallers[i].gone) fallers.splice(i,1);
+  if(shook){ fgCtx.save(); fgCtx.translate((Math.random()-0.5)*2*shake.mag*Math.max(shake.t/0.22,0),(Math.random()-0.5)*2*shake.mag*Math.max(shake.t/0.22,0)); }
   drawParticles(dt);
   drawSlashes(dt);
   drawFloaters(dt);
   for(const p of trail) p.age-=dt*1.8;
   trail=trail.filter(p=>p.age>0);
   drawTrail();
+  if(shook) fgCtx.restore();
+  ctx = mainCtx;
   if(shook) ctx.restore();
   requestAnimationFrame(frame);
 }
