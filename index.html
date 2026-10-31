@@ -1047,10 +1047,23 @@ function layoutPhoneStack(){
     panelEl.style.transform='scale('+z.toFixed(3)+')';
   }
 }
-addEventListener('resize', layoutPhoneStack);
-layoutPhoneStack();
+/* shrink the title until BOTH lines fit the screen — never truncate */
+const titleEl=document.querySelector('.banner h1');
+function fitTitle(){
+  const avail=(document.querySelector('.banner').clientWidth)||W;
+  // restore the CSS size first, then measure overflow
+  titleEl.style.fontSize='';
+  const need=titleEl.scrollWidth, have=avail-8;
+  if(need>have){
+    const base=parseFloat(getComputedStyle(titleEl).fontSize);
+    titleEl.style.fontSize=Math.floor(base*(have/need))+'px';
+  }
+}
+function layoutAll(){ layoutPhoneStack(); fitTitle(); }
+addEventListener('resize', layoutAll);
+layoutAll();
 // webfonts change the banner height after first paint — re-measure once they land
-if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>layoutPhoneStack());
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>layoutAll());
 
 /* ---------- background birthday music ---------- */
 const music={on:false, userOpt:null, timer:null};
