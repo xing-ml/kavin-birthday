@@ -105,12 +105,12 @@
     border:1px solid rgba(232,194,106,.35);
     opacity:0;transition:opacity 1s ease 1s;letter-spacing:.04em}
   body.ready .score{opacity:1;}
-  .score .pts{font-size:18px;color:#f5cf7d;font-weight:800;font-variant-numeric:tabular-nums;
+  .score .pts{font-size:26px;color:#f5cf7d;font-weight:800;font-variant-numeric:tabular-nums;
     text-shadow:0 0 10px rgba(232,194,106,.5);line-height:1}
-  .score .sep{width:1px;height:14px;background:rgba(232,194,106,.3);flex:none}
-  .score .cnt{font-size:12.5px;color:#f3e7d3;opacity:.9;font-variant-numeric:tabular-nums}
-  .score .combo{font-size:12.5px;color:#ff9db5;font-weight:800}
-  .score .lvl{font-size:12.5px;letter-spacing:.06em;color:#8fd3f4;font-variant-numeric:tabular-nums}
+  .score .sep{width:1px;height:20px;background:rgba(232,194,106,.3);flex:none}
+  .score .cnt{font-size:17px;color:#f3e7d3;opacity:.9;font-variant-numeric:tabular-nums}
+  .score .combo{font-size:17px;color:#ff9db5;font-weight:800}
+  .score .lvl{font-size:17px;letter-spacing:.06em;color:#8fd3f4;font-variant-numeric:tabular-nums}
   .score.pop .pts{animation:scorepop .35s ease}
   @keyframes scorepop{40%{transform:scale(1.35)}}
 
@@ -152,11 +152,11 @@
     .hint{font-size:max(9px,1.6vh);letter-spacing:.14em;bottom:calc(2.2vh + env(safe-area-inset-bottom));
       left:2vw;right:auto;transform:none;text-align:left;max-width:60vw;line-height:1.35}
     /* top HUD row: compact, sits above the banner */
-    .score{top:calc(10px + env(safe-area-inset-top));gap:7px;padding:5px 10px}
-    .score .pts{font-size:15px}
-    .score .cnt,.score .combo{font-size:11px}
-    .score .lvl{font-size:11px}
-    .score .sep{height:11px}
+    .score{top:calc(10px + env(safe-area-inset-top));gap:7px;padding:6px 11px}
+    .score .pts{font-size:22px}
+    .score .cnt,.score .combo{font-size:15px}
+    .score .lvl{font-size:15px}
+    .score .sep{height:16px}
     /* wish card: bottom sheet, fully proportional */
     .wish{position:fixed;left:max(3vw,env(safe-area-inset-left));right:max(3vw,env(safe-area-inset-right));
       bottom:calc(2vh + env(safe-area-inset-bottom));margin:0;max-width:none;
@@ -713,16 +713,11 @@ function drawParticles(dt){
 
 /* ---------- levels: rain intensity grows with your score ---------- */
 const LEVELS=[
-  {at:0,    cap:4,  gapMin:1.6,  gapMax:2.6,  speed:1.0,  name:'warm-up'},
-  {at:200,  cap:5,  gapMin:1.35, gapMax:2.1,  speed:1.06, name:'sugar rush'},
-  {at:500,  cap:7,  gapMin:1.1,  gapMax:1.7,  speed:1.13, name:'cake storm'},
-  {at:1000, cap:8,  gapMin:0.95, gapMax:1.5,  speed:1.2,  name:'frosting frenzy'},
-  {at:1600, cap:10, gapMin:0.8,  gapMax:1.3,  speed:1.28, name:'sprinkle tornado'},
-  {at:2300, cap:12, gapMin:0.7,  gapMax:1.1,  speed:1.36, name:'bakery blaze'},
-  {at:3100, cap:14, gapMin:0.6,  gapMax:0.95, speed:1.45, name:'oven overdrive'},
-  {at:4000, cap:16, gapMin:0.52, gapMax:0.85, speed:1.55, name:'tier meltdown'},
-  {at:5000, cap:19, gapMin:0.45, gapMax:0.75, speed:1.7,  name:'sugar singularity'},
-  {at:6200, cap:22, gapMin:0.38, gapMax:0.65, speed:1.85, name:'legendary'},
+  {at:0,    cap:4,  gapMin:1.6, gapMax:2.6, speed:1.0,  name:'warm-up',       wish:"Happy 31st Birthday, Kavin!"},
+  {at:300,  cap:8,  gapMin:0.9, gapMax:1.5, speed:1.45, name:'sugar rush',    wish:'Wishing you health and happiness!'},
+  {at:900,  cap:13, gapMin:0.5, gapMax:0.85,speed:1.95, name:'cake storm',    wish:'May your year be sweet!'},
+  {at:1900, cap:19, gapMin:0.3, gapMax:0.5, speed:2.5,  name:'sprinkle storm',wish:'Success in everything you do!'},
+  {at:3200, cap:26, gapMin:0.18,gapMax:0.32,speed:3.2,  name:'legendary',     wish:"You're a LEGEND — best year yet!"},
 ];
 let level=0;
 function levelCap(){ return Math.max(3, Math.round(LEVELS[level].cap*(narrow?0.6:1))); }
@@ -738,8 +733,8 @@ function levelDown(){
 }
 function levelUp(){
   const L=LEVELS[level];
-  floaters.push({x:W/2,y:H*0.28,txt:'LEVEL UP!',life:2.4,c:'#e8c26a',big:true});
-  floaters.push({x:W/2,y:H*0.28+38,txt:L.name.toUpperCase()+' — cake rain intensifies',life:2.4,c:'#ff9db5',big:false});
+  bigText('LEVEL '+(level+1), 1.1, '#e8c26a', true);
+  floaters.push({x:W/2,y:H*0.42,txt:L.wish,life:3.0,c:'#ff9db5',big:true});
   // rising arpeggio
   try{ const b=level*2; [0,1,2,3].forEach(i=>tone(330*Math.pow(1.26,i+b*0),0.12*i,0.5,0.13,'triangle')); }catch(err){}
   for(let i=0;i<70;i++){
