@@ -71,7 +71,7 @@
     max-width:min(860px,92vw);margin:0 auto;opacity:0;transition:opacity 1.4s ease .25s}
   body.ready .banner{opacity:1}
   .banner h1{font-family:'Baloo 2','Catamaran',cursive;font-weight:800;white-space:nowrap;
-    font-size:clamp(46px,7.6vw,104px);line-height:1.02;letter-spacing:.01em;
+    font-size:clamp(54px,8.8vw,124px);line-height:1.02;letter-spacing:0;
     background:linear-gradient(180deg,#fff3c4 0%,#ffd35e 35%,#ff9a5e 70%,#ff5d8f 100%);
     -webkit-background-clip:text;background-clip:text;color:transparent;
     filter:drop-shadow(0 4px 0 rgba(90,20,60,0.45));
@@ -134,7 +134,7 @@
     /* everything below scales with the viewport: phones of any size get a
        proportionally identical layout — no scrolling, no clipping */
     .banner{top:calc(max(48px, 5.5vh) + env(safe-area-inset-top))}
-    .banner h1{font-size:min(7.8vw, 6.2vh)}
+    .banner h1{font-size:min(8.4vw, 6.8vh)}
     .banner .tamil-main{font-size:min(5vw, 3.6vh);margin-top:0.6vh}
     .banner .sparkle{font-size:2.2vh}
     .panel{left:max(2vw,env(safe-area-inset-left));right:max(2vw,env(safe-area-inset-right));
@@ -455,18 +455,22 @@ const fallers=[];
 let nextDrop=0.4;
 const GRAV=300;
 function pickSpawnX(r){
-  // cake rain across the screen, but NOT through the big cake's columns
-  const halfBottom = tiers.length ? tiers[0].w/2 : 0;
-  const L = Math.max(0, CX-halfBottom), Rr = Math.min(W, CX+halfBottom);
-  if(W-(Rr-L) < 2.4*(r+20)) return null;   // no room at all — skip this drop
+  // cake rain across the screen, but NOT through the big cake's silhouette.
+  // on phones the cake fills most of the width — reserve only its UPPER tiers'
+  // column (the cake tapers, the bottom tier flares): rain pours around the
+  // sloped sides and only grazes the widest part down at table level.
+  let colW = tiers.length ? tiers[0].w/2 : 0;
+  if(narrow && tiers.length===5) colW = tiers[3].w/2 + 6;
+  const L = Math.max(0, CX-colW), Rr = Math.min(W, CX+colW);
+  const lo = r+6, leftMax = L-r-10, rightMin = Rr+r+10, rightMax = W-r-6;
+  const leftRoom = leftMax>lo, rightRoom = rightMax>rightMin;
+  if(!leftRoom && !rightRoom) return null;   // truly no room — skip this drop
   for(let tries=0;tries<8;tries++){
     let x;
     if(narrow){
-      // big cake owns the middle: keep the whole cake disc inside the margins
-      const lo = r+6, leftMax = L-r-12, rightMin = Rr+r+12, rightMax = W-r-6;
-      if(leftMax>lo && (rightMax<=rightMin || Math.random()<0.5))
+      if(leftRoom && (rightMax<=rightMin || Math.random()<0.5))
         x = lo + Math.random()*(leftMax-lo);
-      else if(rightMax>rightMin)
+      else if(rightRoom)
         x = rightMin + Math.random()*(rightMax-rightMin);
       else continue;
     } else {
@@ -820,10 +824,11 @@ function addScore(x,y,pts,comboN){
 function drawFloaters(dt){
   for(let i=floaters.length-1;i>=0;i--){
     const fl=floaters[i];
-    fl.y-=45*dt; fl.life-=dt*(fl.txt.length>10?0.5:1.1);
+    if(fl.huge){ fl.life-=dt; }
+    else { fl.y-=45*dt; fl.life-=dt*(fl.txt.length>10?0.5:1.1); }
     if(fl.life<=0){floaters.splice(i,1);continue;}
     ctx.save();
-    ctx.font=(fl.big?'700 30px':'700 20px')+" Catamaran, sans-serif";
+    ctx.font=(fl.huge?`800 ${Math.round(Math.min(W*0.16,120))}px`:(fl.big?'700 30px':'700 20px'))+" 'Baloo 2', Catamaran, sans-serif";
     ctx.textAlign='center';
     ctx.globalAlpha=Math.min(fl.life*1.6,1);
     ctx.lineWidth=4; ctx.lineJoin='round'; ctx.strokeStyle='rgba(20,8,28,0.7)';
@@ -1068,6 +1073,26 @@ window.addEventListener('pointerdown', e=>{
 
 /* ---------- interaction ---------- */
 const hintEl=document.getElementById('hint');
+
+/* cake rain stays OFF until the candles are blown and the 3-2-1 countdown ends */
+let rainOn=false;
+function bigText(txt,life,color,cls){ floaters.push({x:W/2,y:H*0.34,txt,life,c:color,huge:cls||false}); }
+function startCountdown(){
+  if(rainOn) return;
+  let n=3;
+  const step=()=>{
+    if(n>0){
+      bigText(String(n), 0.95, '#f5cf7d', true);
+      try{ tone(520+ (3-n)*90, 0, 0.16, 0.2, 'triangle'); }catch(err){}
+      n--; setTimeout(step, 950);
+    } else {
+      bigText('开始切蛋糕！', 1.6, '#ff9db5', true);
+      try{ tone(784,0,0.2,0.22,'triangle'); tone(1046,0.14,0.3,0.2,'triangle'); }catch(err){}
+      rainOn=true; nextDrop=0.25;
+    }
+  };
+  step();
+}
 const HOLD_S=1.4;
 let down=null, holdC=null, celebrated=false;
 function pt(e){ const r=canvas.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top}; }
@@ -1178,6 +1203,7 @@ function celebrate(){
   if(!music.on){ try{ birthdayTune(); }catch(err){} }
   hintEl.textContent='now slice the falling cakes';
   setTimeout(()=>hintEl.classList.add('gone'), 6000);
+  setTimeout(startCountdown, 500);
 }
 
 /* ---------- main loop ---------- */
@@ -1185,7 +1211,7 @@ let last=performance.now();
 function frame(t){
   const dt=Math.min((t-last)/1000,0.033); last=t;
   nextDrop-=dt;
-  if(nextDrop<=0){
+  if(rainOn && nextDrop<=0){
     const L=LEVELS[level], cap=levelCap();
     const alive=fallers.filter(f=>!f.gone).length;
     if(alive<cap){ spawnCake(); if(alive<cap-3) spawnCake(); }
