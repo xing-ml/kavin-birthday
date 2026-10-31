@@ -175,6 +175,7 @@
     <div class="st">Sound settings</div>
     <label class="row"><span>🎵 Birthday music</span><button id="musicbtn" class="sw on" aria-label="toggle music"></button></label>
     <label class="row"><span>🔔 Sound effects</span><button id="sfxbtn" class="sw on" aria-label="toggle sound effects"></button></label>
+    <div class="row"><span id="miclabel">🌬️ Blow into mic</span><button id="micbtn" class="sw" aria-label="toggle microphone blowing"></button></div>
   </div>
   <div class="banner">
     <span class="sparkle sp1">✨</span><span class="sparkle sp2">✨</span>
@@ -197,7 +198,7 @@
     </div>
   </div>
 
-  <div class="hint" id="hint">press &amp; hold a candle to blow it out</div>
+  <div class="hint" id="hint">hold a candle &ndash; or tap &#9881; and blow into the mic</div>
 
   <div class="score" id="score">
     <span class="pts" id="pts">0</span><span class="sep"></span><span class="cnt">🍰<span id="cnt">0</span></span><span class="sep"></span><span class="lvl">L<span id="lvl">1</span><span id="nx"> +200</span><span id="nxsuf"></span></span><span class="combo" id="combo"></span>
@@ -393,9 +394,11 @@ function bakeCake(){
   for(const c of candles) drawCandle(c, false);
   ctx=oldCtx; candles=oldCandles;
 }
+let cakeShift=0, cakeSink=0;   // post-celebration sink (phones)
 function drawCake(){
   if(!cakeBake) bakeCake();
-  ctx.drawImage(cakeBake, bakeBox.x0, bakeBox.y0, bakeBox.x1-bakeBox.x0, bakeBox.y1-bakeBox.y0);
+  if(cakeSink>0 && cakeShift<cakeSink) cakeShift=Math.min(cakeSink, cakeShift + cakeSink*dtSink());
+  ctx.drawImage(cakeBake, bakeBox.x0, bakeBox.y0+cakeShift, bakeBox.x1-bakeBox.x0, bakeBox.y1-bakeBox.y0);
   for(const c of candles) drawCandle(c, true);   // flames, hold-ring, smoke
 }
 function drawCandle(c, dyn){
@@ -709,6 +712,14 @@ function drawParticles(dt){
     ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h); ctx.restore(); ctx.globalAlpha=1;}
 }
 
+let _sinkT=0, _sinkLast=0;
+function dtSink(){
+  const now=performance.now();
+  const d=_sinkLast?Math.min((now-_sinkLast)/1000,0.05):0; _sinkLast=now;
+  _sinkT=Math.min(1,_sinkT+d/0.9);
+  return 0.18;   // fraction of remaining distance per tick — ease-out
+}
+
 /* ---------- levels: rain intensity grows with your score ---------- */
 const LEVELS=[
   {at:0,    cap:4,  gapMin:1.6,  gapMax:2.6,  speed:1.0,  name:'warm-up'},
@@ -919,6 +930,62 @@ function puffSound(){
   s.buffer=buf; s.connect(f).connect(g).connect(master); s.start();
 }
 
+/* ---------- blow out candles with the microphone ---------- */
+const mic={on:false, stream:null, ac:null, analyser:null, data:null, charge:0, timer:null};
+const micBtn=document.getElementById('micbtn'), micLabel=document.getElementById('miclabel');
+function micPaint(){
+  micBtn.classList.toggle('on', mic.on);
+  micLabel.textContent = mic.on ? '🌬️ Listening… blow!' : '🌬️ Blow into mic';
+}
+async function micStart(){
+  try{
+    mic.stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false, noiseSuppression:false, autoGainControl:false}});
+    mic.ac = mic.ac || new (window.AudioContext||window.webkitAudioContext)();
+    if(mic.ac.state!=='running') await mic.ac.resume();
+    const srcNode=mic.ac.createMediaStreamSource(mic.stream);
+    mic.analyser=mic.ac.createAnalyser(); mic.analyser.fftSize=512;
+    mic.data=new Uint8Array(mic.analyser.frequencyBinCount);
+    srcNode.connect(mic.analyser);
+    mic.on=true; mic.charge=0; micPaint();
+    mic.timer=setInterval(micWatch, 60);
+  }catch(err){
+    micLabel.textContent='🌬️ Mic unavailable';
+    setTimeout(()=>{ micLabel.textContent='🌬️ Blow into mic'; }, 2200);
+  }
+}
+function micStop(){
+  mic.on=false;
+  if(mic.timer){ clearInterval(mic.timer); mic.timer=null; }
+  if(mic.stream){ mic.stream.getTracks().forEach(t=>t.stop()); mic.stream=null; }
+  micPaint();
+}
+function micWatch(){
+  if(!mic.on || !mic.analyser) return;
+  if(!candles.some(c=>c.lit) || celebrated){ return; }   // nothing left to blow
+  mic.analyser.getByteFrequencyData(mic.data);
+  // a blow = loud + energy concentrated in low frequencies (breath, not voice)
+  let low=0, high=0;
+  for(let i=1;i<12;i++)  low  += mic.data[i];       // ~  <500 Hz
+  for(let i=12;i<60;i++) high += mic.data[i];       // >500 Hz
+  low/=11; high/=48;
+  const blowing = low>60 && low > high*1.6;
+  mic.charge = blowing ? Math.min(1, mic.charge+0.06/0.55) : Math.max(0, mic.charge-0.08);
+  // visual feedback while charging: flames lean harder
+  for(const c of candles){ if(c.lit) c.flick=Math.max(c.flick, mic.charge); }
+  if(mic.charge>=1){
+    const lit=candles.filter(k=>k.lit);
+    lit.forEach((k,i)=>setTimeout(()=>extinguish(k), i*120));
+    mic.charge=0;
+    bigText('WHOOSH!', 1.1, '#8fd3f4', true);
+    try{ puffSound(); }catch(err){}
+    setTimeout(micStop, 600);   // job done — stop listening
+  }
+}
+micBtn.addEventListener('click', e=>{
+  e.preventDefault(); e.stopPropagation();
+  if(mic.on) micStop(); else micStart();
+});
+
 /* keep the phone text panel strictly below the banner, whatever the screen height */
 const panelEl=document.querySelector('.panel'), bannerEl=document.querySelector('.banner');
 function layoutPhoneStack(){
@@ -1062,7 +1129,7 @@ function startCountdown(){
       try{ tone(520+ (3-n)*90, 0, 0.16, 0.2, 'triangle'); }catch(err){}
       n--; setTimeout(step, 950);
     } else {
-      bigText('开始切蛋糕！', 1.6, '#ff9db5', true);
+      bigText('SLICE THE CAKE!', 1.6, '#ff9db5', true);
       try{ tone(784,0,0.2,0.22,'triangle'); tone(1046,0.14,0.3,0.2,'triangle'); }catch(err){}
       rainOn=true; nextDrop=0.25;
     }
@@ -1070,7 +1137,7 @@ function startCountdown(){
   step();
 }
 const HOLD_S=1.4;
-let down=null, holdC=null, celebrated=false;
+let down=null, holdC=null, celebrated=false, blowAll=false;
 function pt(e){ const r=canvas.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top}; }
 function candleAt(p){
   for(const c of candles){
@@ -1127,7 +1194,7 @@ canvas.addEventListener('pointerdown', e=>{
   e.preventDefault();   // stop long-press text selection on touch devices
   down=pt(e); trail=[{x:down.x,y:down.y,age:1}];
   const c=candleAt(down);
-  if(c){ holdC=c; c.hold=0; }
+  if(c){ holdC=c; c.hold=0; blowAll=true; }   // one breath puts out every candle
 });
 canvas.addEventListener('contextmenu', e=>e.preventDefault());
 window.addEventListener('contextmenu', e=>{ if(e.target===canvas||e.target===document.body) e.preventDefault(); });
@@ -1139,7 +1206,7 @@ canvas.addEventListener('pointermove', e=>{
   if(holdC){
     if(Math.hypot(p.x-holdC.x, p.y-(holdC.baseY-holdC.h/2)) > holdC.r*1.4){
       if(holdC.hold>0.25 && holdC.hold<HOLD_S) holdC.flick=1;
-      holdC.hold=0; holdC=null;
+      holdC.hold=0; for(const k of candles) k.hold=0; holdC=null; blowAll=false;
     } else return; // holding a candle: no slicing while it burns there
   }
   if(Math.hypot(p.x-down.x,p.y-down.y)>14){
@@ -1149,10 +1216,12 @@ canvas.addEventListener('pointermove', e=>{
 });
 for(const ev of ['pointerup','pointercancel']) canvas.addEventListener(ev, ()=>{
   if(holdC){
-    if(holdC.hold>0.15 && holdC.hold<HOLD_S){ holdC.hold=0; holdC.flick=1; puffSound(); } // tap = flame wobble
-    else holdC.hold=0;
+    if(holdC.hold>0.15 && holdC.hold<HOLD_S){ holdC.flick=1; puffSound(); } // tap = flame wobble
+    holdC.hold=0;
+    for(const k of candles) k.hold=0;
     holdC=null;
   }
+  blowAll=false;
   down=null;
 });
 
@@ -1175,6 +1244,7 @@ function celebrate(){
       c:cols[i%cols.length],life:2+Math.random()*2});
   }
   document.getElementById('wish').classList.add('show');
+  if(narrow) cakeSink=Math.round(H*0.34);   // sink the served cake below the wishes
   // if the birthday loop already plays, no need to double it
   if(!music.on){ try{ birthdayTune(); }catch(err){} }
   hintEl.textContent='now slice the falling cakes';
@@ -1213,9 +1283,15 @@ function frame(t){
     else { nxEl.textContent=' MAX'; nxSuf.textContent=''; } }
   for(const c of candles){
     if(c.flick>0) c.flick=Math.max(0, c.flick-dt*2.2);
-    if(holdC===c && c.lit){
-      c.hold+=dt;
-      if(c.hold>=HOLD_S) extinguish(c);
+  }
+  if(holdC && holdC.lit && blowAll){
+    holdC.hold+=dt;
+    for(const k of candles){ if(k!==holdC && k.lit) k.hold=holdC.hold; }
+    if(holdC.hold>=HOLD_S){
+      // one breath: every lit candle goes out together, staggered by a hair
+      const lit=candles.filter(k=>k.lit);
+      lit.forEach((k,i)=>setTimeout(()=>extinguish(k), i*120));
+      blowAll=false;
     }
   }
   ctx.clearRect(0,0,W,H);
