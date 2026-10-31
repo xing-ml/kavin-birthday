@@ -455,32 +455,8 @@ const fallers=[];
 let nextDrop=0.4;
 const GRAV=300;
 function pickSpawnX(r){
-  // cake rain across the screen, but NOT through the big cake's silhouette.
-  // on phones the cake fills most of the width — reserve only its UPPER tiers'
-  // column (the cake tapers, the bottom tier flares): rain pours around the
-  // sloped sides and only grazes the widest part down at table level.
-  let colW = tiers.length ? tiers[0].w/2 : 0;
-  if(narrow && tiers.length===5) colW = tiers[3].w/2 + 6;
-  const L = Math.max(0, CX-colW), Rr = Math.min(W, CX+colW);
-  const lo = r+6, leftMax = L-r-10, rightMin = Rr+r+10, rightMax = W-r-6;
-  const leftRoom = leftMax>lo, rightRoom = rightMax>rightMin;
-  if(!leftRoom && !rightRoom) return null;   // truly no room — skip this drop
-  for(let tries=0;tries<8;tries++){
-    let x;
-    if(narrow){
-      if(leftRoom && (rightMax<=rightMin || Math.random()<0.5))
-        x = lo + Math.random()*(leftMax-lo);
-      else if(rightRoom)
-        x = rightMin + Math.random()*(rightMax-rightMin);
-      else continue;
-    } else {
-      // desktop: keep clear of the big cake on the right
-      const hi = Math.max(L-r-12, r+6);
-      x = r+6 + Math.random()*(hi-(r+6));
-    }
-    if(x>r && x<W-r) return x;
-  }
-  return null;
+  // rain falls anywhere across the screen — no obstacle avoidance
+  return r+6 + Math.random()*(W-(r+6)*2);
 }
 function spawnCake(){
   const r=narrow? Math.min(40, W*0.075) : 40+Math.random()*20;
