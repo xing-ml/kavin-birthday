@@ -103,7 +103,7 @@
     .banner .tamil-main{font-size:clamp(17px,5vw,24px)}
     .panel{left:max(20px,env(safe-area-inset-left));right:max(20px,env(safe-area-inset-right));
       max-width:none;top:31vh;bottom:auto;transform:none;
-      max-height:26vh;overflow:hidden;padding-bottom:0;text-align:center;
+      max-height:26vh;overflow-y:auto;padding-bottom:0;text-align:center;
       transition:opacity 1.4s ease .2s}
     .panel .rule{margin:8px auto}
     .eyebrow{font-size:10px;letter-spacing:.3em;margin-bottom:10px}
@@ -112,8 +112,11 @@
     .rule{margin:12px 0}
     .sub-ta{line-height:1.6;margin-top:6px}
     .sign{margin-top:10px}
-    .hint{font-size:10.5px;letter-spacing:.14em;bottom:calc(18px + env(safe-area-inset-bottom));
-      left:12px;right:auto;transform:none;text-align:left;max-width:38vw;line-height:1.35}
+    .hint{font-size:10.5px;letter-spacing:.14em;bottom:calc(150px + env(safe-area-inset-bottom));
+      left:12px;right:auto;transform:none;text-align:left;max-width:60vw;line-height:1.35}
+    /* text panel gets a soft backdrop so falling cakes never obscure it */
+    .panel{background:rgba(24,13,32,.72);border:1px solid rgba(232,194,106,.16);
+      border-radius:14px;padding:12px 14px}
     /* compact score chip so it never covers the hint */
     .score{padding:6px 10px;bottom:calc(12px + env(safe-area-inset-bottom));right:12px}
     .score .pts{font-size:20px}
@@ -161,7 +164,7 @@
     <div class="lbl">points</div>
     <div class="cnt">🍰 <span id="cnt">0</span> sliced</div>
     <div class="combo" id="combo"></div>
-    <div class="lvl">Lv.<span id="lvl">1</span> · <span id="nx">200</span> pts to next</div>
+    <div class="lvl">Lv.<span id="lvl">1</span> · <span id="nx">200</span><span id="nxsuf"> pts to next</span></div>
   </div>
 </div>
 
@@ -769,6 +772,22 @@ function puffSound(){
   s.buffer=buf; s.connect(f).connect(g).connect(a.destination); s.start();
 }
 
+/* keep the phone text panel strictly below the banner, whatever the screen height */
+const panelEl=document.querySelector('.panel'), bannerEl=document.querySelector('.banner');
+function layoutPhoneStack(){
+  if(!narrow){ panelEl.style.top=''; panelEl.style.maxHeight=''; return; }
+  bannerEl.style.top='';
+  const bb=bannerEl.getBoundingClientRect();
+  const top=Math.round(bb.bottom+10);
+  panelEl.style.top=top+'px';
+  // keep the panel clear of the cake zone below ~60% of the screen
+  panelEl.style.maxHeight=Math.max(150, Math.round(H*0.60 - top))+'px';
+}
+addEventListener('resize', layoutPhoneStack);
+layoutPhoneStack();
+// webfonts change the banner height after first paint — re-measure once they land
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>layoutPhoneStack());
+
 /* ---------- interaction ---------- */
 const hintEl=document.getElementById('hint');
 const HOLD_S=1.4;
@@ -865,10 +884,10 @@ function frame(t){
     }
   }
   if(combo>1 && performance.now()-comboAt>1200){ combo=0; comboEl.textContent=''; }
-  { const lvEl=document.getElementById('lvl'), nxEl=document.getElementById('nx');
-    const nxNext = level<LEVELS.length-1 ? (LEVELS[level+1].at-points)+' pts to next' : 'max level';
+  { const lvEl=document.getElementById('lvl'), nxEl=document.getElementById('nx'), nxSuf=document.getElementById('nxsuf');
     if(lvEl.textContent!=String(level+1)) lvEl.textContent=String(level+1);
-    if(nxEl.textContent!==nxNext) nxEl.textContent=nxNext; }
+    if(level<LEVELS.length-1){ nxEl.textContent=String(LEVELS[level+1].at-points); nxSuf.textContent=' pts to next'; }
+    else { nxEl.textContent='MAX'; nxSuf.textContent=''; } }
   for(const c of candles){
     if(c.flick>0) c.flick=Math.max(0, c.flick-dt*2.2);
     if(holdC===c && c.lit){
