@@ -127,6 +127,7 @@
     opacity:0;transform:translateY(14px);transition:all 1.2s cubic-bezier(.2,.7,.2,1);pointer-events:none;
     display:none}
   .wish.show{display:block;opacity:1;transform:none}
+  .wish.show.hide{opacity:0;transform:translateY(14px);transition:all .65s ease}
   .wish .t{font-family:'Anek Tamil','Catamaran',sans-serif;font-style:normal;font-weight:500;
     font-size:12.5px;color:var(--rose);display:block;margin-top:8px}
 
@@ -394,11 +395,9 @@ function bakeCake(){
   for(const c of candles) drawCandle(c, false);
   ctx=oldCtx; candles=oldCandles;
 }
-let cakeShift=0, cakeSink=0;   // post-celebration sink (phones)
 function drawCake(){
   if(!cakeBake) bakeCake();
-  if(cakeSink>0 && cakeShift<cakeSink) cakeShift=Math.min(cakeSink, cakeShift + cakeSink*dtSink());
-  ctx.drawImage(cakeBake, bakeBox.x0, bakeBox.y0+cakeShift, bakeBox.x1-bakeBox.x0, bakeBox.y1-bakeBox.y0);
+  ctx.drawImage(cakeBake, bakeBox.x0, bakeBox.y0, bakeBox.x1-bakeBox.x0, bakeBox.y1-bakeBox.y0);
   for(const c of candles) drawCandle(c, true);   // flames, hold-ring, smoke
 }
 function drawCandle(c, dyn){
@@ -710,14 +709,6 @@ function drawParticles(dt){
     ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot);
     ctx.globalAlpha=Math.min(p.life*2,1); ctx.fillStyle=p.c;
     ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h); ctx.restore(); ctx.globalAlpha=1;}
-}
-
-let _sinkT=0, _sinkLast=0;
-function dtSink(){
-  const now=performance.now();
-  const d=_sinkLast?Math.min((now-_sinkLast)/1000,0.05):0; _sinkLast=now;
-  _sinkT=Math.min(1,_sinkT+d/0.9);
-  return 0.18;   // fraction of remaining distance per tick — ease-out
 }
 
 /* ---------- levels: rain intensity grows with your score ---------- */
@@ -1243,13 +1234,18 @@ function celebrate(){
       w:4+Math.random()*6,h:8+Math.random()*10,rot:Math.random()*6,vr:(Math.random()-0.5)*0.2,
       c:cols[i%cols.length],life:2+Math.random()*2});
   }
-  document.getElementById('wish').classList.add('show');
-  if(narrow) cakeSink=Math.round(H*0.34);   // sink the served cake below the wishes
+  const wishEl=document.getElementById('wish');
+  wishEl.classList.add('show');
+  hintEl.textContent='make a wish!';
   // if the birthday loop already plays, no need to double it
   if(!music.on){ try{ birthdayTune(); }catch(err){} }
-  hintEl.textContent='now slice the falling cakes';
-  setTimeout(()=>hintEl.classList.add('gone'), 6000);
-  setTimeout(startCountdown, 500);
+  // wishes stay 3 seconds, then fade away and the slicing countdown begins
+  setTimeout(()=>{
+    hintEl.classList.add('gone');
+    wishEl.classList.add('hide');
+    setTimeout(()=>{ wishEl.classList.remove('show'); wishEl.classList.remove('hide'); }, 700);
+    setTimeout(startCountdown, 600);
+  }, 3000);
 }
 
 /* ---------- main loop ---------- */
