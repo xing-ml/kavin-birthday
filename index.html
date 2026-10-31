@@ -704,6 +704,15 @@ function drawParticles(dt){
     ctx.globalAlpha=s.life; ctx.fillStyle='#ffe9a8';
     ctx.beginPath(); ctx.arc(s.x,s.y,1.8*s.life,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1;}
   for(let i=confetti.length-1;i>=0;i--){const p=confetti[i];
+    if(p.spark){
+      // firework glint: light gravity, air drag, quick fade, round
+      p.vy+=180*dt; p.vx*=0.985; p.vy*=0.985;
+      p.x+=p.vx; p.y+=p.vy; p.life-=dt*1.4;
+      if(p.life<=0){confetti.splice(i,1);continue;}
+      ctx.globalAlpha=Math.max(p.life,0); ctx.fillStyle=p.c;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.w*0.55,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1;
+      continue;
+    }
     p.vy+=140*dt; p.x+=p.vx; p.y+=p.vy; p.rot+=p.vr; p.life-=dt*0.25;
     if(p.life<=0||p.y>H+20){confetti.splice(i,1);continue;}
     ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot);
@@ -725,8 +734,47 @@ function syncLevel(){
   while(level<LEVELS.length-1 && points>=LEVELS[level+1].at){ level++; levelUp(); }
   while(level>0 && points<LEVELS[level].at){ level--; levelDown(); }
 }
+/* ---------- grand finale: looping fireworks + blessings at max level ---------- */
+const FINALE_WISHES=[
+  'Happy Birthday, Kavin!','31 & legendary!','Health & happiness always!',
+  'Sweetest year yet!','Cake for breakfast, why not?','Big dreams, bigger cake!',
+  'Best version of you!','Sing it loud!','Wish granted!','Legend level: UNLOCKED!',
+];
+let finale={timer:null, wi:0};
+function fireworksBurst(){
+  const cx=W*(0.15+Math.random()*0.7), cy=H*(0.12+Math.random()*0.35);
+  const cols=['#ffd98a','#ff9db5','#8fd3f4','#9ae6b4','#fff4e0','#c58cf0'];
+  const c=cols[Math.random()*cols.length|0];
+  const n=34;
+  for(let i=0;i<n;i++){
+    const a=(i/n)*Math.PI*2 + Math.random()*0.2, sp=2.2+Math.random()*2.6;
+    confetti.push({x:cx,y:cy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,
+      w:3+Math.random()*3,h:3+Math.random()*3,rot:Math.random()*6,vr:(Math.random()-0.5)*0.4,
+      c:Math.random()<0.25?'#fff4e0':c,life:1.2+Math.random()*0.9, spark:true});
+  }
+  try{ tone(180+Math.random()*60,0,0.25,0.08,'sine'); tone(1200+Math.random()*600,0.02,0.12,0.04,'triangle'); }catch(err){}
+}
+function finaleStart(){
+  if(finale.timer) return;
+  bigText('MAX LEVEL!', 1.8, '#f5cf7d', true);
+  fireworksBurst(); setTimeout(fireworksBurst,450); setTimeout(fireworksBurst,900);
+  finale.wi=0;
+  finale.timer=setInterval(()=>{
+    if(level<LEVELS.length-1){ finaleStop(); return; }
+    floaters.push({x:W/2, y:H*(0.5+Math.random()*0.12), txt:FINALE_WISHES[finale.wi%FINALE_WISHES.length],
+      life:2.8, c:['#f5cf7d','#ff9db5','#8fd3f4','#9ae6b4','#c58cf0'][finale.wi%5], big:true, gentle:true});
+    finale.wi++;
+    fireworksBurst();
+    if(finale.wi%3===0) setTimeout(fireworksBurst,300);
+  }, 2300);
+}
+function finaleStop(){
+  if(finale.timer){ clearInterval(finale.timer); finale.timer=null; }
+}
+
 function levelDown(){
   const L=LEVELS[level];
+  finaleStop();
   floaters.push({x:W/2,y:H*0.28,txt:'LEVEL DOWN',life:1.8,c:'#8fd3f4',big:true});
   floaters.push({x:W/2,y:H*0.28+34,txt:'dropped to '+L.name,life:1.8,c:'#9fb3d6',big:false});
   try{ tone(330,0,0.18,0.10,'triangle'); tone(262,0.16,0.32,0.10,'triangle'); }catch(err){}
@@ -735,6 +783,7 @@ function levelUp(){
   const L=LEVELS[level];
   bigText('LEVEL '+(level+1), 1.1, '#e8c26a', true);
   floaters.push({x:W/2,y:H*0.42,txt:L.wish,life:3.0,c:'#ff9db5',big:true});
+  if(level===LEVELS.length-1) setTimeout(finaleStart, 900);
   // rising arpeggio
   try{ const b=level*2; [0,1,2,3].forEach(i=>tone(330*Math.pow(1.26,i+b*0),0.12*i,0.5,0.13,'triangle')); }catch(err){}
   for(let i=0;i<70;i++){
@@ -798,6 +847,7 @@ function drawFloaters(dt){
   for(let i=floaters.length-1;i>=0;i--){
     const fl=floaters[i];
     if(fl.huge){ fl.life-=dt; }
+    else if(fl.gentle){ fl.y-=16*dt; fl.life-=dt*0.55; }
     else { fl.y-=45*dt; fl.life-=dt*(fl.txt.length>10?0.5:1.1); }
     if(fl.life<=0){floaters.splice(i,1);continue;}
     ctx.save();
