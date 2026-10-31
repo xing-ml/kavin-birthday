@@ -22,6 +22,28 @@
   body, canvas{cursor:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'><g transform='rotate(38 22 22)'><path d='M6 20 L34 20 L40 23 L34 26 L6 26 Z' fill='%23d9dee6' stroke='%238b93a1' stroke-width='1'/><path d='M34 20 L40 23 L34 26 Z' fill='%23f2f5f9'/><rect x='0' y='19' width='8' height='8' rx='2' fill='%237a4a21'/></g></svg>") 6 30, crosshair;}
   /* blowing-face cursor near a candle */
   body.blow, body.blow canvas{cursor:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'><circle cx='15' cy='22' r='10' fill='%231a1024' fill-opacity='0.55' stroke='%23e8c26a' stroke-width='2.4'/><path d='M26 15 q7 -2 14 0 M26 22 q8 0 14 2 M26 29 q6 2 12 3' stroke='%23e8c26a' stroke-width='2.4' fill='none' stroke-linecap='round'/><circle cx='12' cy='19' r='1.5' fill='%23e8c26a'/><path d='M11 25 q4 2 7 0' stroke='%23e8c26a' stroke-width='2' fill='none' stroke-linecap='round'/></svg>") 15 22, pointer;}
+  #setbtn{position:fixed;top:calc(12px + env(safe-area-inset-top));right:14px;z-index:21;
+    width:38px;height:38px;border-radius:50%;border:1px solid rgba(232,194,106,.45);
+    background:rgba(30,16,40,.8);color:#fff;font-size:17px;line-height:1;cursor:pointer;padding:0;
+    opacity:0;transition:opacity 1s ease 1.2s;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+  body.ready #setbtn{opacity:.9}
+  #setpanel{position:fixed;top:calc(58px + env(safe-area-inset-top));right:14px;z-index:21;
+    background:rgba(30,16,40,.94);border:1px solid rgba(232,194,106,.4);border-radius:14px;
+    padding:14px 16px;min-width:230px;font-family:'Catamaran',sans-serif;
+    opacity:0;pointer-events:none;transform:translateY(-6px);
+    transition:opacity .25s ease, transform .25s ease;-webkit-tap-highlight-color:transparent}
+  #setpanel.open{opacity:1;pointer-events:auto;transform:translateY(0)}
+  #setpanel .st{color:#e8c26a;font-size:11px;letter-spacing:.24em;text-transform:uppercase;
+    text-align:center;margin-bottom:10px}
+  #setpanel .row{display:flex;align-items:center;justify-content:space-between;gap:18px;
+    color:#f5e9ff;font-size:14px;padding:7px 0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  #setpanel .sw{width:44px;height:24px;border-radius:14px;border:1px solid rgba(232,194,106,.5);
+    background:rgba(90,60,110,.5);position:relative;cursor:pointer;padding:0;flex:none;
+    transition:background .2s ease;-webkit-tap-highlight-color:transparent}
+  #setpanel .sw::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;
+    border-radius:50%;background:#9a86ab;transition:left .2s ease, background .2s ease}
+  #setpanel .sw.on{background:rgba(232,194,106,.35)}
+  #setpanel .sw.on::after{left:22px;background:#e8c26a}
   #stage{position:fixed;inset:0}
   #cake{z-index:1}
   #fg{z-index:16;pointer-events:none}
@@ -102,7 +124,7 @@
   @media (max-width:820px), (pointer:coarse){
     /* everything below scales with the viewport: phones of any size get a
        proportionally identical layout — no scrolling, no clipping */
-    .banner{top:calc(2.5vh + env(safe-area-inset-top))}
+    .banner{top:calc(max(56px, 7vh) + env(safe-area-inset-top))}
     .banner h1{font-size:min(13vw, 9.5vh)}
     .banner .tamil-main{font-size:min(5vw, 3.6vh);margin-top:0.6vh}
     .banner .sparkle{font-size:2.2vh}
@@ -139,6 +161,12 @@
   <canvas id="cake"></canvas>
   <canvas id="fg"></canvas>
 
+  <button id="setbtn" aria-label="settings">⚙️</button>
+  <div id="setpanel">
+    <div class="st">Sound settings</div>
+    <label class="row"><span>🎵 Birthday music</span><button id="musicbtn" class="sw on" aria-label="toggle music"></button></label>
+    <label class="row"><span>🔔 Sound effects</span><button id="sfxbtn" class="sw on" aria-label="toggle sound effects"></button></label>
+  </div>
   <div class="banner">
     <span class="sparkle sp1">✨</span><span class="sparkle sp2">✨</span>
     <span class="sparkle sp3">✨</span><span class="sparkle sp4">✨</span>
@@ -785,15 +813,37 @@ function drawTrail(){
 }
 
 /* ---------- sound ---------- */
-let AC=null;
-function audio(){ AC=AC||new (window.AudioContext||window.webkitAudioContext)(); return AC; }
+let AC=null, master=null;
+function audio(){
+  if(!AC){
+    AC = new (window.AudioContext||window.webkitAudioContext)();
+    // a gentle limiter so overlapping slice sounds never clip
+    const comp=AC.createDynamicsCompressor();
+    master=AC.createGain();
+    try{ master.gain.value = (JSON.parse(localStorage.getItem('kb-prefs')||'{}').sfx===false)?0:1; }catch(err){ master.gain.value=1; }
+    master.connect(comp).connect(AC.destination);
+  }
+  // iOS/Safari & Chrome autoplay policy: the context starts suspended until a
+  // user gesture explicitly resumes it — without this call there is NO sound.
+  if(AC.state==='suspended' || AC.state==='interrupted') AC.resume().catch(()=>{});
+  return AC;
+}
+function dest(){ audio(); return master; }
+// after a phone lock / tab switch iOS parks the context as 'interrupted' —
+// bring it back and restart the scheduler clock when it resumes
+window.addEventListener('resume', ()=>{ try{ if(music.on){ audio().resume(); } }catch(err){} });
+document.addEventListener('visibilitychange', ()=>{
+  try{
+    if(document.visibilityState==='visible' && music.on) audio().resume();
+  }catch(err){}
+});
 function tone(freq,t0,dur,vol=0.18,type='triangle'){
   const a=audio(), o=a.createOscillator(), g=a.createGain();
   o.type=type; o.frequency.value=freq;
   g.gain.setValueAtTime(0,a.currentTime+t0);
   g.gain.linearRampToValueAtTime(vol,a.currentTime+t0+0.02);
   g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+t0+dur);
-  o.connect(g).connect(a.destination); o.start(a.currentTime+t0); o.stop(a.currentTime+t0+dur+0.1);
+  o.connect(g).connect(master); o.start(a.currentTime+t0); o.stop(a.currentTime+t0+dur+0.1);
 }
 function sliceSound(pts){
   const k=Math.min((pts||10)/10,8);
@@ -813,7 +863,7 @@ function puffSound(){
   for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*(1-i/d.length);
   const s=a.createBufferSource(), f=a.createBiquadFilter(), g=a.createGain();
   f.type='bandpass'; f.frequency.value=900; g.gain.value=0.12;
-  s.buffer=buf; s.connect(f).connect(g).connect(a.destination); s.start();
+  s.buffer=buf; s.connect(f).connect(g).connect(master); s.start();
 }
 
 /* keep the phone text panel strictly below the banner, whatever the screen height */
@@ -844,6 +894,106 @@ layoutPhoneStack();
 // webfonts change the banner height after first paint — re-measure once they land
 if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>layoutPhoneStack());
 
+/* ---------- background birthday music ---------- */
+const music={on:false, userOpt:null, timer:null};
+let musicGain=null;
+const BEAT=0.52;
+// Happy Birthday melody: [freq, beats, whenOffset(sec, absolute within loop)] built below
+const NB={G4:392.00,A4:440.00,Bb4:466.16,B4:493.88,C5:523.25,D5:587.33,E5:659.25,F5:698.49,G5:783.99};
+const SONG=[[NB.G4,.75],[NB.G4,.25],[NB.A4,1],[NB.G4,1],[NB.C5,1],[NB.B4,2],
+            [NB.G4,.75],[NB.G4,.25],[NB.D5,1],[NB.G4,1],[NB.C5,1],[NB.A4,2],
+            [NB.G4,.75],[NB.G4,.25],[NB.G5,1],[NB.E5,1],[NB.C5,1],[NB.B4,1],[NB.A4,1],
+            [NB.F5,.75],[NB.F5,.25],[NB.E5,1],[NB.C5,1],[NB.D5,1],[NB.C5,3]];
+const SONG_LEN=SONG.reduce((a,n)=>a+n[1]*BEAT,0);
+function musicTick(){
+  if(!music.on) return;
+  const a=audio(), t0=a.currentTime+0.15;
+  let t=0;
+  for(const [f,b] of SONG){
+    // soft music-box voice: triangle + octave sine, gentle envelope
+    const o=a.createOscillator(), g=a.createGain();
+    o.type='triangle'; o.frequency.value=f;
+    g.gain.setValueAtTime(0,t0+t);
+    g.gain.linearRampToValueAtTime(0.045,t0+t+0.03);
+    g.gain.exponentialRampToValueAtTime(0.001,t0+t+b*BEAT*0.92);
+    o.connect(g).connect(musicGain); o.start(t0+t); o.stop(t0+t+b*BEAT+0.1);
+    const o2=a.createOscillator(), g2=a.createGain();
+    o2.type='sine'; o2.frequency.value=f*2;
+    g2.gain.setValueAtTime(0,t0+t);
+    g2.gain.linearRampToValueAtTime(0.012,t0+t+0.02);
+    g2.gain.exponentialRampToValueAtTime(0.001,t0+t+b*BEAT*0.5);
+    o2.connect(g2).connect(musicGain); o2.start(t0+t); o2.stop(t0+t+b*BEAT+0.1);
+    t+=b*BEAT;
+  }
+  music.timer=setTimeout(musicTick, Math.max(1000,(SONG_LEN-0.3)*1000));
+}
+function musicStart(){
+  if(music.on) return;
+  const a=audio();
+  if(!musicGain){ musicGain=a.createGain(); musicGain.gain.value=1; musicGain.connect(master); }
+  musicGain.gain.value=1;
+  music.on=true; musicTick();
+  if(window.paintSwitches) paintSwitches(); else musicSw.classList.add('on');
+}
+function musicStop(){
+  music.on=false;
+  if(music.timer){ clearTimeout(music.timer); music.timer=null; }
+  if(musicGain) musicGain.gain.value=0;
+  if(window.paintSwitches) paintSwitches(); else musicSw.classList.remove('on');
+}
+function musicToggle(){
+  music.userOpt = music.on ? 'off' : 'on';
+  if(music.on) musicStop(); else musicStart();
+}
+function musicTryStart(){
+  if(music.userOpt==='off' || music.on) return;
+  try{ musicStart(); }catch(err){}
+}
+
+let sfxOn = true;
+try{
+  const prefs=JSON.parse(localStorage.getItem('kb-prefs')||'{}');
+  if(prefs.sfx===false) sfxOn=false;
+  if(prefs.music==='off') music.userOpt='off';
+  else if(prefs.music==='on') music.userOpt='on';
+}catch(err){}
+function savePrefs(){
+  try{ localStorage.setItem('kb-prefs', JSON.stringify({sfx:sfxOn, music:music.userOpt})); }catch(err){}
+}
+const musicSw=document.getElementById('musicbtn'), sfxSw=document.getElementById('sfxbtn');
+function paintSwitches(){
+  musicSw.classList.toggle('on', music.on);
+  sfxSw.classList.toggle('on', sfxOn);
+}
+function sfxToggle(){
+  sfxOn=!sfxOn;
+  try{ if(master) master.gain.value = sfxOn?1:0; }catch(err){}
+  paintSwitches(); savePrefs();
+}
+musicSw.addEventListener('click', e=>{
+  e.preventDefault(); e.stopPropagation();
+  try{ audio(); }catch(err){}
+  musicToggle(); paintSwitches(); savePrefs();
+});
+sfxSw.addEventListener('click', e=>{
+  e.preventDefault(); e.stopPropagation();
+  try{ audio(); }catch(err){}
+  sfxToggle();
+});
+// settings popup open/close
+const setPanel=document.getElementById('setpanel'), setBtn=document.getElementById('setbtn');
+setBtn.addEventListener('click', e=>{
+  e.stopPropagation();
+  setPanel.classList.toggle('open');
+  paintSwitches();
+});
+setPanel.addEventListener('click', e=>e.stopPropagation());
+window.addEventListener('pointerdown', e=>{
+  const t=e.target;
+  if(setPanel.classList.contains('open') && t instanceof Node && t!==setBtn && !setPanel.contains(t))
+    setPanel.classList.remove('open');
+});
+
 /* ---------- interaction ---------- */
 const hintEl=document.getElementById('hint');
 const HOLD_S=1.4;
@@ -856,6 +1006,20 @@ function candleAt(p){
   }
   return null;
 }
+function unlockAudio(){
+  try{
+    const a=audio();
+    // play one silent sample inside the gesture — the trick that actually
+    // releases WebAudio on iOS
+    const b=a.createBuffer(1,1,a.sampleRate), s=a.createBufferSource(), g=a.createGain();
+    g.gain.value=0.0001; s.buffer=b; s.connect(g).connect(master); s.start(0);
+    // once audio is unlocked, the birthday music starts and loops forever
+    musicTryStart();
+  }catch(err){}
+}
+window.addEventListener('touchstart', unlockAudio, {passive:true});
+window.addEventListener('pointerdown', unlockAudio);
+window.addEventListener('keydown', unlockAudio);
 canvas.addEventListener('pointerdown', e=>{
   try{ canvas.setPointerCapture(e.pointerId); }catch(err){}
   try{ audio(); }catch(err){}
@@ -910,7 +1074,8 @@ function celebrate(){
       c:cols[i%cols.length],life:2+Math.random()*2});
   }
   document.getElementById('wish').classList.add('show');
-  try{ birthdayTune(); }catch(err){}
+  // if the birthday loop already plays, no need to double it
+  if(!music.on){ try{ birthdayTune(); }catch(err){} }
   hintEl.textContent='now slice the falling cakes';
   setTimeout(()=>hintEl.classList.add('gone'), 6000);
 }
